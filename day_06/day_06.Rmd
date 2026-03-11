@@ -1,0 +1,162 @@
+---
+title: "Day_06_scientific_visualization_training"
+author: "By Muhammad Yasir Qurashi"
+date: "2026-03-11"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# **Time Series & Trend Analysis in R**
+
+Time series visualization shows how a variable changes across time.
+
+In research, this helps answer;
+
+* Are values increasing or decreasing over time?
+
+* Is there seasonality?
+
+* Are there anomalies or spikes?
+
+* Are variables moving together or independently?
+
+## Loading dataset
+
+```{r}
+data("airquality")
+head(airquality)
+
+airquality
+```
+
+| Variable | Description                     |
+| -------- | ------------------------------- |
+| Ozone    | Ozone concentration (ppb)       |
+| Solar.R  | Solar radiation (Langley units) |
+| Wind     | Wind speed (mph)                |
+| Temp     | Temperature (°F)                |
+| Month    | Month of observation            |
+| Day      | Day of observation              |
+
+
+## Today's Scientific Questions
+
+* Does ozone pollution increase during summer months?
+
+* Is there a trend between temperature and ozone concentration?
+
+* Do wind patterns reduce pollution levels over time?
+
+
+## Loading libraries
+
+```{r}
+library(tidyverse)
+library(RColorBrewer)
+library(ggpubr)
+library(reshape2)
+```
+
+
+## Data manipulation 
+
+
+```{r}
+# Creating date column in our dateaset that helps us in time series analysis visualization
+airquality <-  airquality %>% 
+  drop_na() %>% 
+  mutate( date = make_date(1973,Month, Day)
+    ) %>% 
+  arrange(date);airquality
+
+```
+
+## Temporal trend of Ozone Conc.
+
+
+```{r, fig.width=8}
+p1 <- ggplot(airquality, mapping = aes(x = date, y = Ozone)) +
+  geom_point(alpha = 0.7, color = "blue", size = 3) +
+  geom_smooth( method = "loess", span = 0.3, se = T, color = "#D55E00",
+              fill = "#F4A582", linewidth = 1.2) +
+  theme_classic() +
+    labs( x = "Date (1973)", y = "Ozone Concentration (ppb)", title = "Temporal Trend of Ozone Concentration",  caption = "Made by Muhammad Yasir Qurashi");p1
+```
+
+## Trend of Ozone concentration
+
+```{r, fig.width=8}
+p2 <- ggplot(airquality, mapping = aes(x = date, y = Ozone)) +
+  geom_point(alpha = 1, fill = "black", size = 3) +
+  geom_line(color = "blue") +
+  theme_classic() +
+    labs( x = "Date (1973)", y = "Ozone Concentration (ppb)", title = "Trend of Ozone Concentration",  caption = "Made by Muhammad Yasir Qurashi");p2
+```
+
+## Ozone variation across months
+
+```{r, fig.width=8}
+p3 <- ggplot(airquality, mapping = aes(x = Day, y = Ozone)) +
+  geom_point(alpha = 1, fill = "black", size = 3) +
+  geom_line(color = "blue") +
+  facet_wrap(~Month) +
+  theme_classic() +
+    labs( x = "Date (1973)", y = "Ozone Concentration (ppb)", title = "Daily Ozone variation across Months",  caption = "Made by Muhammad Yasir Qurashi");p3
+```
+
+## Seasonal distribution of Ozone
+
+
+```{r}
+p4 <- ggplot(airquality, aes(factor(Month), Ozone)) +
+  geom_boxplot(fill = "#56B4E9") +
+  labs( x = "Month", y = "Ozone (ppb)", title = "Seasonal Distribution of Ozone", caption = "Made by Muhammad Yasir Qurashi") +
+  theme_classic();p4
+```
+
+## Data conversion into long_format
+
+```{r}
+
+air_long <- airquality %>%
+  select(date, Ozone, Temp, Wind) %>%
+  pivot_longer(-date)
+print(air_long)
+```
+
+## Time comparison of Environmental variables
+
+```{r, fig.width=8}
+p5 <- ggplot(air_long, aes(date, value, color = name)) +
+  geom_line(linewidth = 1) +
+  labs( x = "Date", y = "Value", color = "Variable", title = "Time Comparison of Environmental Variables", caption = "Made by Muhammad Yasir Qurashi") +
+  theme_bw();p5
+```
+
+
+## Interpretation 
+
+Ozone concentrations exhibited a clear temporal trend across the observation period, with peak levels occurring during mid-summer months. The LOESS-smoothed curve indicated a gradual increase in ozone concentrations from May to July followed by a decline toward September.Seasonal comparison revealed significantly higher ozone concentrations during July compared with early summer months
+
+
+## Multipanel figure
+
+```{r,fig.height=6, fig.width=12}
+library(patchwork)
+final_plot_day_06 <- ( p1 | p2 ) / ( p4 | p5 ) +
+  plot_annotation(tag_levels = "A");final_plot_day_06
+```
+
+
+
+
+Best Regards,
+
+*Muhammad Yasir Qurashi*
+
+Research Data Analysis Tools Mentor
+
+
