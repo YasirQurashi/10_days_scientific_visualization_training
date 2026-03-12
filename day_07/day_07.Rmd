@@ -1,0 +1,194 @@
+---
+title: "Day_07_scientific_visualization_mastery"
+author: "By Muhammad Yasir Qurashi"
+date: "2026-03-11"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# **Gene Expression Heatmaps**
+
+Research Questions
+
+-   Which genes are highly expressed across samples?
+
+-   Do treated vs untreated samples cluster differently?
+
+-   Which genes respond strongly to treatment?
+
+In this section, we explore RNA-seq gene expression data and learn how to visualize global expression patterns using heatmap. Heatmaps are widely used in genomics research because they allow researchers to observe patterns of gene activity across multiple biological samples simultaneously.
+
+
+## **Today's Goal**
+
+The goal is to transform a gene expression matrix into a publication-quality heatmap that highlights relationships between genes and experimental conditions.
+
+## Loading libraries
+
+```{r}
+library(pheatmap)
+library(airway)
+library(tidyverse)
+```
+
+
+## Loading dataset
+
+## Step 01 Extracting Raw Counts
+
+```{r}
+data("airway")
+
+counts <- assay(airway) # It extracts the numerical matrix of raw RNA-Seq read counts from the airway experiment object. 
+dim(counts)
+head(counts)
+```
+
+## Understanding RNA-seq Data Structure
+
+-   RNA-seq experiments measure gene expression levels by counting how many sequencing reads map to each gene.
+
+The resulting dataset is typically organized as a gene expression matrix;
+
+| Component | Meaning                                          |
+|-----------|--------------------------------------------------|
+| Rows      | Genes                                            |
+| Columns   | Biological samples                               |
+| Values    | RNA-seq read counts representing gene expression |
+
+Higher values indicate greater transcriptional activity, while lower values indicate lower gene expression.
+
+In addition to the expression matrix, RNA-seq datasets also include metadata describing the experimental conditions of each sample (e.g., treated vs untreated cells).
+
+```{r}
+# metadata of the gene expression matrix
+
+ colData(airway)
+```
+
+-   What Metadata explains
+
+| Variable   | Meaning                   |
+|------------|---------------------------|
+| SampleName | GEO sample ID             |
+| cell       | Cell line used            |
+| dex        | Treatment (dexamethasone) |
+| albut      | Additional treatment      |
+| Run        | Sequencing run ID         |
+| avgLength  | Read length               |
+| Experiment | Sequencing experiment     |
+| Sample     | NCBI sample ID            |
+| BioSample  | NCBI biosample            |
+
+-   What We Will Do With This Data
+
+From these two tables we can create;
+
+Heatmap (Gene expression patterns)
+
+PCA plot (Sample similarity)
+
+Volcano plot (Significant genes)
+
+MA plot (Expression vs fold change)
+
+These are the four most common genomics figures in Nature / Cell / Science papers
+
+## Step 02 Filtering rows with non-zero sum
+
+```{r}
+#  filter rows have non-zero sums
+
+counts_filter <- counts[rowSums(counts) > 0,] 
+
+```
+
+
+## Step 03 Log transformation
+
+```{r}
+
+log_counts <- log2(counts_filter + 1)
+
+# RNA-seq counts are often highly skewed, meaning a few genes have extremely large values, Log transformation compresses large values and stabilizes variance.
+```
+
+
+## Step 04 Selecting top Variable genes
+
+
+```{r}
+library(matrixStats)
+
+var_genes <- order( rowVars(log_counts), decreasing = TRUE)[1:50]
+
+heat_data <- log_counts[var_genes, ]
+```
+
+
+## Step 05 Creating Heatmap
+
+
+```{r, fig.height=8, fig.width=8}
+
+pheatmap( heat_data, scale = "row",
+ clustering_distance_rows = "euclidean",
+ clustering_distance_cols = "euclidean",
+ clustering_method = "complete",
+ color = colorRampPalette(
+ c("navy", "white", "firebrick3"))(50), cutree_rows = 4, cutree_cols = 3)
+```
+
+## Step 06  Adding annotation
+
+```{r}
+annotation <- data.frame(Treatment = colData(airway)$dex) # extract dex variable from metadata and dtores it in treatment column
+annotation
+rownames(annotation) <- colnames(heat_data)
+head(heat_data)
+```
+
+## Step 07 Annotated Heatmap
+
+```{r, fig.height=8, fig.width=8}
+
+pheatmap( heat_data, scale = "row",
+annotation_col = annotation,
+clustering_distance_rows = "euclidean",
+clustering_distance_cols = "euclidean",
+clustering_method = "complete",
+color = colorRampPalette(
+c("#2166AC","white","#B2182B") )(100), fontsize_row = 6, fontsize_col = 10, border_color = NA,
+cutree_rows = 4)
+
+```
+
+
+## Interpretation
+
+When reading the heatmap, look for three things;
+
+* Gene Clusters
+
+Genes grouped together likely share similar biological functions or pathways.
+
+* Sample Clusters
+
+If treated samples cluster together, it suggests the treatment caused consistent transcriptional changes.
+
+* Expression Patterns
+
+Red and blue regions highlight genes that are upregulated or downregulated across samples.
+
+
+Best Regards,
+
+*Muhammad Yasir Qurashi*
+
+Research Data Analysis Tools Mentor
+
+
+
