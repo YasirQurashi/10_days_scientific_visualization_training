@@ -1,0 +1,162 @@
+---
+title: "Day_08_scientific_visualization_mastery"
+author: "By Muhammad Yasir Qurashi"
+date: "`r Sys.Date()`"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# **Differential Gene Expression**
+
+## **Today's Goal**
+
+The goal is to transform a gene expression matrix into a publication-quality Volcano plot & MAplot that highlights Statistical significance difference between genes in two different experimental conditions.
+
+## Step 01a 
+
+* Loading libraries & dataset
+
+```{r}
+library(DESeq2)
+library(airway)
+data("airway")
+
+## DESeq2 package, which is one of the most widely used tools for differential gene expression analysis in RNA-seq studies.
+
+## DESeq2 performs:
+
+# 1. normalization
+
+# 2. dispersion estimation
+
+# 3. statistical testing; to determine which genes change significantly between conditions.
+```
+
+## Step 01b
+
+* Extract count matrix & metadata
+
+```{r}
+
+counts <- assay(airway) # Extract gene expression count matrix
+head(counts)
+
+colData(airway) # Extract gene expression metadata
+
+```
+
+## Step 02
+
+* Create DESeq dataset
+
+```{r}
+
+DE_data <- DESeqDataSet(airway, design = ~dex)
+
+## DESeqDataSet creates Creates an object that stores: 1. Expression counts 2. Sample metadata 3. Experimental design; design tells DESeq to compare gene in different treatments
+```
+
+
+## Step 03 
+
+* Filter low count reads
+
+```{r}
+
+DE_data <- DE_data[rowSums(counts(DE_data)) > 10, ]
+                   
+## RNA-seq datasets contain many genes with very low counts
+ 
+# Low-count genes; 1. increase noise 2. reduce statistical power
+```
+
+
+## Step 04 
+
+* Run Differential Expression analysis
+
+```{r}
+
+DE_data <- DESeq(DE_data)
+
+```
+
+DESeq2 performs three operations;
+
+* Normalization
+
+Adjusts for sequencing depth differences between samples
+
+* Dispersion estimation
+
+Measures biological variability for each gene
+
+* Negative binomial model testing
+
+Tests whether gene expression differs between conditions
+
+
+## Step 05
+
+* Extract significant results from DESeq 
+
+```{r}
+DE_result <- results(DE_data)
+head(DE_result)
+nrow(DE_result)
+```
+
+## Step 06
+
+* Order gene by significance 
+
+```{r}
+
+DE_result <- DE_result[order(DE_result$padj), ]
+head(DE_result)
+top10_genes <- rownames(DE_result)[1:10]
+```
+
+## Step 07 
+
+* Volcano plot 
+
+```{r}
+library(EnhancedVolcano)
+# Converting DE_result to data frame
+
+res_df <- as.data.frame(DE_result)
+head(res_df)
+class(res_df)
+```
+
+```{r, fig.dpi=1200}
+EnhancedVolcano( res_df, x = 'log2FoldChange', y = 'padj', lab = row.names(res_df), pCutoff = 0.05, FCcutoff = 1, pointSize = 1, labSize = 2,
+                 selectLab = top10_genes,
+                 title = "Differential Expression: Dexamethasone Treatment",
+                 col = c("grey30","forestgreen","royalblue","red2"),
+                 subtitle = "Airway RNA-seq dataset",caption = "Made by Muhammad Yasir Qurashi", ylim = c(0,30), xlim = c(-5,+5)) +
+  theme_bw()
+```
+
+* Innterpretation of VOlcano plot
+
+| Color | Meaning                 |
+| ----- | ----------------------- |
+| grey  | not significant         |
+| blue  | significant fold change |
+| green | significant p-value     |
+| red   | both significant        |
+
+
+Differential expression analysis identified multiple genes significantly regulated by dexamethasone treatment. The volcano plot revealed a subset of genes with both large fold changes and strong statistical support (adjusted p-value < 0.05), indicating substantial transcriptional responses to glucocorticoid exposure.
+
+
+Best Regards,
+
+*Muhammad Yasir Qurashi*
+
+Research Data Analysis Tools Mentor
